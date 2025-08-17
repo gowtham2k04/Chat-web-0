@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat-Web-0</title>
+  <!--
+    ⚠️ IMPORTANT LEGAL NOTE
+    This project is a WhatsApp‑inspired UI, not an exact replica. All names, logos, and trademarks belong to their respective owners.
+
+    HOW TO USE
+    1) Create a Firebase project → enable Email/Password Auth.
+    2) Create a Realtime Database (in test, then switch to secure rules below).
+    3) Create a Storage bucket (for profile & group photos).
+    4) Fill your Firebase config in the CONFIG section.
+    5) Host these files with any static host (Firebase Hosting recommended).
+
+    FEATURES
+    - Email/password signup + email verification
+    - Mobile‑first WhatsApp‑style layout
+    - One‑to‑one & Group chats
+    - Realtime messaging (Firebase Realtime Database)
+    - Contact book (by email) + CSV import
+    - Profile: name, about, photo upload (Firebase Storage)
+    - Presence (online/last seen)
+    - Input validation & error toasts
+
+    FILE IS SELF‑CONTAINED (HTML + CSS + JS)
+  -->
+  <style>
+    :root{
+      --bg:#0b141a;         /* App frame background */
+      --panel:#111b21;      /* Panels */
+      --panel-2:#202c33;    /* Chat header, inputs */
+      --accent:#00a884;     /* WhatsApp green-ish */
+      --text:#e9edef;       /* Primary text */
+      --sub:#8696a0;        /* Secondary text */
+      --me:#005c4b;         /* My message bubble */
+      --them:#1f2c33;       /* Their bubble */
+      --danger:#ef4444;
+      --warn:#f59e0b;
+      --ok:#22c55e;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text); font:14px/1.4 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    a{color:var(--accent); text-decoration:none}
+    button{cursor:pointer}
+    input,button,select,textarea{font:inherit}
+
+    /* Auth screens */
+    .auth-shell{display:grid; place-items:center; min-height:100vh; padding:24px}
+    .card{width:100%; max-width:420px; background:var(--panel); border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:hidden}
+    .card-h{padding:16px 20px; background:var(--panel-2); font-weight:600}
+    .card-b{padding:20px; display:grid; gap:12px}
+    .row{display:grid; gap:6px}
+    .row label{color:var(--sub); font-size:12px}
+    .in{background:#0a1014; border:1px solid #1f2a30; color:var(--text); border-radius:10px; padding:12px 12px}
+    .btn{background:var(--accent); border:none; color:#042b23; font-weight:700; padding:12px 14px; border-radius:12px}
+    .btn.secondary{background:transparent; color:var(--text); border:1px solid #2b3a40}
+    .muted{color:var(--sub); font-size:12px}
+    .err{background:#2a1111; color:#ffb4b4; border:1px solid #5c1a1a; padding:10px 12px; border-radius:10px; display:none}
+    .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:20px; background:var(--panel-2); padding:10px 14px; border-radius:999px; box-shadow:0 8px 24px rgba(0,0,0,.4); display:none}
+
+    /* App shell */
+    .app{display:none; height:100vh;}
+    .wrap{display:grid; grid-template-columns:360px 1fr; height:100%;}
+    @media (max-width:900px){ .wrap{grid-template-columns:1fr} .sidebar{position:fixed; inset:0; transform:translateX(-100%); transition:transform .25s ease} .sidebar.open{transform:translateX(0)} .chat{padding-top:56px} .topbar{position:fixed; left:0; right:0; top:0; z-index:5}}
+
+    .sidebar{background:var(--panel); border-right:1px solid #0f171c; display:grid; grid-template-rows:56px 48px 1fr}
+    .topbar{background:var(--panel-2); display:flex; align-items:center; gap:8px; padding:8px 10px}
+    .avatar{width:36px; height:36px; border-radius:50%; background:#2a3b43; flex:0 0 36px; overflow:hidden}
+    .avatar img{width:100%; height:100%; object-fit:cover}
+    .top-actions{margin-left:auto; display:flex; gap:6px}
+    .icon-btn{width:36px; height:36px; border-radius:50%; border:none; background:transparent; display:grid; place-items:center}
+
+    .search{background:var(--panel); border-bottom:1px solid #0f171c; display:flex; align-items:center; gap:8px; padding:6px 10px}
+    .search .in{width:100%; background:#0a1014}
+
+    .list{overflow:auto}
+    .chat-item{display:flex; gap:12px; align-items:center; padding:10px 12px; border-bottom:1px solid #0f171c; cursor:pointer}
+    .chat-item:hover{background:#131f25}
+    .chat-item .meta{min-width:0; flex:1}
+    .meta .name{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .meta .last{color:var(--sub); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .time{color:var(--sub); font-size:11px}
+
+    .chat{display:grid; grid-template-rows:56px 1fr auto; background:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><rect width=%22200%22 height=%22200%22 fill=%22%23111b21%22/><g fill=%22%23162328%22 opacity=%220.55%22><circle cx=%2230%22 cy=%2230%22 r=%221%22/><circle cx=%2270%22 cy=%2280%22 r=%221%22/><circle cx=%22110%22 cy=%22120%22 r=%221%22/></g></svg>') repeat}
+    .chat .head{background:var(--panel-2); display:flex; align-items:center; gap:10px; padding:8px 10px}
+    .chat .head .name{font-weight:700}
+
+    .msgs{overflow:auto; padding:14px 16px; display:flex; flex-direction:column; gap:8px}
+    .bubble{max-width:72%; padding:8px 10px; border-radius:12px; position:relative; word-wrap:break-word}
+    .bubble.me{align-self:flex-end; background:var(--me)}
+    .bubble.them{align-self:flex-start; background:var(--them)}
+    .bubble .t{font-size:12px; color:#cde2d7; opacity:.8; margin-left:8px}
+
+    .composer{background:var(--panel-2); display:flex; gap:8px; padding:8px 10px}
+    .composer .in{flex:1}
+
+    .sheet{position:fixed; left:0; right:0; bottom:0; background:var(--panel); border-top-left-radius:16px; border-top-right-radius:16px; transform:translateY(110%); transition:transform .25s ease; box-shadow:0 -20px 40px rgba(0,0,0,.5); max-height:85vh; display:grid; grid-template-rows:56px 1fr}
+    .sheet.open{transform:translateY(0)}
+    .sheet .h{display:flex; align-items:center; justify-content:space-between; padding:8px 14px; background:var(--panel-2)}
+    .sheet .b{padding:12px; overflow:auto}
+
+    .grid{display:grid; gap:10px}
+    .grid.two{grid-template-columns:1fr 1fr}
+    .grid.three{grid-template-columns:repeat(3,1fr)}
+
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid #2b3a40; border-radius:999px}
+    .pill img{width:22px; height:22px; border-radius:50%}
+
+    .hint{color:var(--sub); font-size:12px}
+    .danger{color:var(--danger)}
+    .ok{color:var(--ok)}
+    .warn{color:var(--warn)}
+    .link{color:var(--accent); cursor:pointer}
+  </style>
+</head>
+<body>
+  <!-- AUTH SCREENS -->
+  <div class="auth-shell" id="auth">
+    <div class="card">
+      <div class="card-h">Sign in</div>
+      <div class="card-b">
+        <div class="err" id="authErr"></div>
+        <div class="row"><label>Email</label><input class="in" id="email" type="email" placeholder="you@example.com"></div>
+        <div class="row"><label>Password</label><input class="in" id="pass" type="password" placeholder="••••••••"></div>
+        <button class="btn" id="loginBtn">Sign in</button>
+        <button class="btn secondary" id="toSignup">Create account</button>
+        <div class="muted">By using this app you agree to our <a href="#">Terms</a> & <a href="#">Privacy</a>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-shell" id="signup" style="display:none">
+    <div class="card">
+      <div class="card-h">Create your account</div>
+      <div class="card-b">
+        <div class="err" id="signupErr"></div>
+        <div class="row"><label>Display name</label><input class="in" id="suName" placeholder="Your name"></div>
+        <div class="row"><label>Email</label><input class="in" id="suEmail" type="email" placeholder="you@example.com"></div>
+        <div class="row"><label>Password</label><input class="in" id="suPass" type="password" placeholder="At least 8 characters"></div>
+        <button class="btn" id="signupBtn">Create & verify</button>
+        <button class="btn secondary" id="toLogin">Back to sign in</button>
+        <div class="muted">We will send a verification email. You must verify before chatting.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="app" id="app">
+    <div class="wrap">
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar">
+        <div class="topbar">
+          <div class="avatar" id="meAvatar"></div>
+          <div style="font-weight:700" id="meName">…</div>
+          <div class="top-actions">
+            <button class="icon-btn" title="New chat" id="newChatBtn">➕</button>
+            <button class="icon-btn" title="New group" id="newGroupBtn">👥</button>
+            <button class="icon-btn" title="Profile" id="profileBtn">⚙️</button>
+          </div>
+        </div>
+        <div class="search">
+          <input class="in" id="search" placeholder="Search or start a new chat"/>
+        </div>
+        <div class="list" id="chatList"></div>
+      </aside>
+
+      <!-- CHAT AREA -->
+      <section class="chat">
+        <div class="topbar head" id="chatHead">
+          <button class="icon-btn" id="openSidebar" title="Back" style="display:none">⬅️</button>
+          <div class="avatar" id="chatAvatar"></div>
+          <div style="min-width:0">
+            <div class="name" id="chatName">Select a chat</div>
+            <div class="hint" id="chatSub">No conversation selected</div>
+          </div>
+          <div class="top-actions" style="margin-left:auto">
+            <button class="icon-btn" id="groupManageBtn" title="Group details" style="display:none">🛠️</button>
+          </div>
+        </div>
+        <div class="msgs" id="msgs"></div>
+        <div class="composer">
+          <input class="in" id="msgBox" placeholder="Type a message"/>
+          <button class="btn" id="sendBtn">Send</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- SHEETS / DRAWERS -->
+  <div class="sheet" id="profileSheet">
+    <div class="h"><div>Profile</div><button class="icon-btn" data-close="profileSheet">✖️</button></div>
+    <div class="b grid">
+      <div class="row">
+        <label>Photo</label>
+        <div class="pill"><img id="profImgPrev"/><input type="file" id="profImg" accept="image/*"></div>
+      </div>
+      <div class="row"><label>Name</label><input class="in" id="profName"/></div>
+      <div class="row"><label>About</label><input class="in" id="profAbout"/></div>
+      <div class="row"><label>Status</label><div id="profStatus" class="hint">—</div></div>
+      <div class="grid two">
+        <button class="btn" id="saveProfile">Save</button>
+        <button class="btn secondary danger" id="logoutBtn">Log out</button>
+      </div>
+      <div class="hint">Email verified is required. <span id="verifyState"></span> <span class="link" id="sendVerifyLink">Resend verification</span></div>
+      <div class="hint warn">Contact sync: import CSV with a column <code>email</code> or add contacts by email. (Note: there's no official "Firebase Contacts API"; contacts here are app‑level.)</div>
+      <div class="grid two">
+        <input type="file" id="csvFile" accept=".csv"/>
+        <button class="btn secondary" id="importCsv">Import CSV</button>
+      </div>
+      <div class="grid two">
+        <input class="in" id="addContactEmail" placeholder="Add contact by email"/>
+        <button class="btn secondary" id="addContact">Add</button>
+      </div>
+      <div>
+        <div style="font-weight:700; margin:8px 0">My contacts</div>
+        <div id="contactList" class="grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="newChatSheet">
+    <div class="h"><div>Start new chat</div><button class="icon-btn" data-close="newChatSheet">✖️</button></div>
+    <div class="b">
+      <div class="grid" id="newChatContacts"></div>
+    </div>
+  </div>
+
+  <div class="sheet" id="newGroupSheet">
+    <div class="h"><div>Create group</div><button class="icon-btn" data-close="newGroupSheet">✖️</button></div>
+    <div class="b grid">
+      <div class="row"><label>Group name</label><input class="in" id="groupName" placeholder="Family"/></div>
+      <div class="row"><label>Group photo</label><input type="file" id="groupPhoto" accept="image/*"/></div>
+      <div class="row"><label>Add members</label><div id="groupPick" class="grid"></div></div>
+      <button class="btn" id="createGroup">Create</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="groupManageSheet">
+    <div class="h"><div>Group details</div><button class="icon-btn" data-close="groupManageSheet">✖️</button></div>
+    <div class="b grid">
+      <div id="gmSummary" class="hint">—</div>
+      <div style="font-weight:700">Members</div>
+      <div id="gmMembers" class="grid"></div>
+      <div class="grid two">
+        <input class="in" id="gmAddEmail" placeholder="Add by email"/>
+        <button class="btn secondary" id="gmAddBtn">Add</button>
+      </div>
+      <button class="btn secondary danger" id="gmLeave">Leave group</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- FIREBASE SDKs (Compat for simplicity) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+
+  <script>
+    // ===================== CONFIG =====================
+   const firebaseConfig = {
+  apiKey: "AIzaSyAvtF2_etF73k3SWxsQxEfr56SGgyoolRM",
+  authDomain: "chat-web-0.firebaseapp.com",
+  projectId: "chat-web-0",
+  storageBucket: "chat-web-0.firebasestorage.app",
+  messagingSenderId: "328815638801",
+  appId: "1:328815638801:web:39fc4450af31f2b09634b0",
+  measurementId: "G-B4MZBNJNN0"
+};
+    // ================ INIT + GLOBAL STATE ================
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const storage = firebase.storage();
+
+    const S = { me:null, currentChatId:null, chatsSub:null, msgsSub:null, contacts:{}, usersById:{}, 
+                myPresenceRef:null };
+
+    // ================ UTILITIES ================
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const toast = (t, ms=2200) => { const el = $('#toast'); el.textContent = t; el.style.display='block'; setTimeout(()=>el.style.display='none', ms)};
+    const uidFromEmailKey = (e)=> e.toLowerCase().replace(/\./g, ',');
+    const esc = s=> s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+
+    const readFileAsDataURL = (file)=> new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(file);});
+
+    const ts = ()=> Date.now();
+    const shortTime = (ms)=> new Date(ms).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+    function avatarHTML(photoURL, name) {
+      const init = (name||' ').trim()[0]?.toUpperCase()||'?';
+      if (photoURL) return `<img src="${photoURL}" alt="${esc(name||'')}"/>`;
+      return `<div style="display:grid;place-items:center;width:100%;height:100%;background:#2a3b43;color:#b8c5cc">${init}</div>`;
+    }
+
+    function openSheet(id){ $('#'+id).classList.add('open'); }
+    function closeSheet(id){ $('#'+id).classList.remove('open'); }
+    $$('#profileBtn, [data-close="profileSheet"]').forEach(b=>b.addEventListener('click',()=>{
+      const el = $('#profileSheet'); el.classList.toggle('open'); }));
+    $$('#newChatBtn, [data-close="newChatSheet"]').forEach(b=>b.addEventListener('click',()=>{
+      const el = $('#newChatSheet'); el.classList.toggle('open'); }));
+    $$('#newGroupBtn, [data-close="newGroupSheet"]').forEach(b=>b.addEventListener('click',()=>{
+      const el = $('#newGroupSheet'); el.classList.toggle('open'); }));
+    $$('#groupManageBtn, [data-close="groupManageSheet"]').forEach(b=>b.addEventListener('click',()=>{
+      const el = $('#groupManageSheet'); el.classList.toggle('open'); }));
+
+    $('#openSidebar').addEventListener('click',()=> $('#sidebar').classList.add('open'));
+
+    // ================ AUTH FLOW ================
+    function show(elId){ $('#auth').style.display='none'; $('#signup').style.display='none'; $('#app').style.display='none'; $('#'+elId).style.display='block'; }
+
+    $('#toSignup').onclick = ()=> show('signup');
+    $('#toLogin').onclick  = ()=> show('auth');
+
+    $('#loginBtn').onclick = async ()=>{
+      try{
+        const email = $('#email').value.trim();
+        const pass  = $('#pass').value;
+        if(!email || !pass) throw new Error('Enter email & password');
+        await auth.signInWithEmailAndPassword(email, pass);
+      }catch(e){ const el=$('#authErr'); el.textContent=e.message; el.style.display='block'; }
+    };
+
+    $('#signupBtn').onclick = async ()=>{
+      try{
+        const name = $('#suName').value.trim();
+        const email = $('#suEmail').value.trim();
+        const pass = $('#suPass').value;
+        if(name.length < 2) throw new Error('Name looks too short.');
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Enter a valid email.');
+        if(pass.length < 8) throw new Error('Password must be at least 8 characters.');
+        const { user } = await auth.createUserWithEmailAndPassword(email, pass);
+        await user.updateProfile({ displayName: name });
+        await user.sendEmailVerification();
+        // bootstrap user node
+        const uref = db.ref('users/'+user.uid);
+        await uref.set({
+          name, email, about:'Hey there! I am using TLT Chat', photoURL:'', createdAt: ts(), lastSeen: ts(), online:true
+        });
+        // email index for lookup by email
+        await db.ref('emails/'+uidFromEmailKey(email)).set(user.uid);
+        toast('Verification link sent. Please verify your email.');
+        show('auth');
+      }catch(e){ const el=$('#signupErr'); el.textContent=e.message; el.style.display='block'; }
+    };
+
+    auth.onAuthStateChanged(async(user)=>{
+      if(!user){ show('auth'); return; }
+      // Gate on email verification
+      await user.reload();
+      const verified = user.emailVerified;
+      if(!verified){ show('app'); initApp(user, { gated:true }); return; }
+      show('app'); initApp(user);
+    });
+
+    $('#sendVerifyLink').onclick = async()=>{
+      const u=auth.currentUser; if(!u) return; await u.sendEmailVerification(); toast('Verification email sent.');
+    };
+
+    // ================ APP INIT ================
+    async function initApp(user, opts={}){
+      S.me = user;
+      // Presence
+      S.myPresenceRef = db.ref('presence/'+user.uid);
+      S.myPresenceRef.set({ online:true, lastSeen: ts() });
+      S.myPresenceRef.onDisconnect().set({ online:false, lastSeen: ts() });
+
+      // Load my profile
+      const uSnap = await db.ref('users/'+user.uid).get();
+      let meData = uSnap.val() || { name: user.displayName||'Me', email:user.email, about:'', photoURL:'' };
+      $('#meName').textContent = meData.name||'Me';
+      $('#meAvatar').innerHTML = avatarHTML(meData.photoURL, meData.name);
+      $('#profName').value = meData.name||'';
+      $('#profAbout').value = meData.about||'';
+      $('#profImgPrev').src = meData.photoURL||'';
+      $('#verifyState').textContent = user.emailVerified ? 'Email verified ✅' : 'Email not verified ❌';
+
+      // Sub: my contacts
+      db.ref('contacts/'+user.uid).on('value', snap=>{
+        S.contacts = snap.val()||{}; renderContacts(); renderNewChatContacts(); renderGroupPick();
+      });
+
+      // Sub: chats where I am a member
+      if(S.chatsSub) S.chatsSub.off();
+      S.chatsSub = db.ref('memberships/'+user.uid);
+      S.chatsSub.on('value', async snap=>{
+        const map = snap.val()||{}; const ids = Object.keys(map);
+        const chats = await Promise.all(ids.map(id=> db.ref('chats/'+id).get().then(s=>({id, ...s.val()})) ));
+        renderChatList(chats.sort((a,b)=> (b.lastMsgAt||0)-(a.lastMsgAt||0)));
+      });
+
+      // Mobile sidebar
+      if(window.innerWidth < 900){ $('#sidebar').classList.add('open'); }
+
+      // Gate UI if not verified
+      if(opts.gated){ toast('Verify your email to start messaging.'); $('#msgBox').disabled = true; $('#sendBtn').disabled = true; }
+      else { $('#msgBox').disabled = false; $('#sendBtn').disabled = false; }
+    }
+
+    // ================ PROFILE MGMT ================
+    $('#logoutBtn').onclick = ()=> auth.signOut();
+
+    $('#profImg').addEventListener('change', async(ev)=>{
+      const f = ev.target.files?.[0]; if(!f) return; $('#profImgPrev').src = URL.createObjectURL(f);
+    });
+
+    $('#saveProfile').onclick = async()=>{
+      const name = $('#profName').value.trim();
+      const about = $('#profAbout').value.trim();
+      const u = auth.currentUser; if(!u) return;
+      let photoURL = null;
+      const file = $('#profImg').files?.[0];
+      if(file){
+        const ref = storage.ref().child('profiles/'+u.uid+'.jpg');
+        await ref.put(file);
+        photoURL = await ref.getDownloadURL();
+      }
+      // update firebase
+      const patch = { name, about, updatedAt: ts() };
+      if(photoURL) patch.photoURL = photoURL;
+      await db.ref('users/'+u.uid).update(patch);
+      await u.updateProfile({ displayName:name, photoURL: photoURL||u.photoURL||null });
+      toast('Profile saved');
+      // refresh UI
+      $('#meName').textContent = name;
+      $('#meAvatar').innerHTML = avatarHTML(photoURL||u.photoURL, name);
+    };
+
+    // Contacts
+    function contactItem(c){
+      const name = c.name||c.email; const html = `<div class="pill" data-email="${esc(c.email)}"><img src="${c.photoURL||''}"/> <span>${esc(name)}</span></div>`; return html;
+    }
+
+    function renderContacts(){
+      const list = $('#contactList'); list.innerHTML = '';
+      Object.values(S.contacts).forEach(c=>{ const div=document.createElement('div'); div.innerHTML=contactItem(c); list.appendChild(div.firstChild); });
+    }
+
+    $('#addContact').onclick = async()=>{
+      try{
+        const email = $('#addContactEmail').value.trim().toLowerCase();
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Invalid email');
+        const uid = (await db.ref('emails/'+uidFromEmailKey(email)).get()).val();
+        if(!uid) throw new Error('No user with this email found');
+        const user = (await db.ref('users/'+uid).get()).val();
+        await db.ref(`contacts/${S.me.uid}/${uid}`).set({ uid, email:user.email, name:user.name||user.email, photoURL:user.photoURL||'' });
+        toast('Contact added');
+      }catch(e){ toast(e.message); }
+    };
+
+    $('#importCsv').onclick = async()=>{
+      const f = $('#csvFile').files?.[0]; if(!f){ toast('Choose a CSV first'); return; }
+      const text = await f.text();
+      const rows = text.split(/\r?\n/).map(r=> r.split(','));
+      const header = rows.shift().map(h=> h.trim().toLowerCase());
+      const emailIdx = header.indexOf('email'); if(emailIdx<0){ toast('CSV must have an email column'); return; }
+      const adds = [];
+      for(const r of rows){ const email = (r[emailIdx]||'').trim().toLowerCase(); if(!email) continue; const key = uidFromEmailKey(email); const uid = (await db.ref('emails/'+key).get()).val(); if(uid){ const user=(await db.ref('users/'+uid).get()).val(); adds.push(db.ref(`contacts/${S.me.uid}/${uid}`).set({uid, email:user.email, name:user.name||user.email, photoURL:user.photoURL||''})); } }
+      await Promise.all(adds); toast('CSV import complete');
+    };
+
+    // ================ CHATS & MESSAGES ================
+    function renderChatList(chats){
+      const list = $('#chatList'); list.innerHTML='';
+      chats.forEach(c=>{
+        const li = document.createElement('div'); li.className='chat-item'; li.dataset.id=c.id;
+        const av = document.createElement('div'); av.className='avatar'; av.innerHTML = avatarHTML(c.photoURL, c.name);
+        const meta = document.createElement('div'); meta.className='meta';
+        const name = document.createElement('div'); name.className='name'; name.textContent = c.name;
+        const last = document.createElement('div'); last.className='last'; last.textContent = c.lastMsg || (c.isGroup? 'Group created' : 'Say hi 👋');
+        meta.appendChild(name); meta.appendChild(last);
+        const time = document.createElement('div'); time.className='time'; time.textContent = c.lastMsgAt ? shortTime(c.lastMsgAt) : '';
+        li.appendChild(av); li.appendChild(meta); li.appendChild(time);
+        li.onclick = ()=> openChat(c.id);
+        list.appendChild(li);
+      });
+    }
+
+    async function openChat(id){
+      S.currentChatId = id; $('#msgs').innerHTML='';
+      const c = (await db.ref('chats/'+id).get()).val();
+      $('#chatName').textContent = c.name; $('#chatSub').textContent = c.isGroup ? 'Group' : 'Direct message';
+      $('#chatAvatar').innerHTML = avatarHTML(c.photoURL, c.name);
+      $('#groupManageBtn').style.display = c.isGroup? '' : 'none';
+      // close sidebar on mobile
+      if(window.innerWidth<900){ $('#sidebar').classList.remove('open'); $('#openSidebar').style.display='block'; }
+
+      if(S.msgsSub) S.msgsSub.off();
+      S.msgsSub = db.ref('messages/'+id).limitToLast(200);
+      S.msgsSub.on('child_added', snap=>{
+        const m = snap.val(); addMsgBubble(m);
+        const el = $('#msgs'); el.scrollTop = el.scrollHeight;
+      });
+    }
+
+    function addMsgBubble(m){
+      const div = document.createElement('div');
+      div.className = 'bubble ' + (m.from===S.me.uid? 'me':'them');
+      div.innerHTML = `${esc(m.text)} <span class="t">${shortTime(m.ts)}</span>`;
+      $('#msgs').appendChild(div);
+    }
+
+    $('#sendBtn').onclick = async()=>{
+      const text = $('#msgBox').value.trim(); if(!text) return;
+      if(!S.currentChatId){ toast('Pick a chat first'); return; }
+      const id = S.currentChatId; const ref = db.ref('messages/'+id).push();
+      const m = { id: ref.key, from:S.me.uid, text, ts: ts() };
+      await ref.set(m);
+      await db.ref('chats/'+id).update({ lastMsg:text, lastMsgAt:m.ts, lastFrom:S.me.uid });
+      $('#msgBox').value='';
+    };
+
+    // New chat (1:1) — tap a contact
+    function renderNewChatContacts(){
+      const wrap = $('#newChatContacts'); wrap.innerHTML='';
+      Object.values(S.contacts).forEach(c=>{
+        const btn = document.createElement('button'); btn.className='pill'; btn.innerHTML = `<img src="${c.photoURL||''}"/> ${esc(c.name||c.email)}`;
+        btn.onclick = ()=> startDirectWith(c.uid);
+        wrap.appendChild(btn);
+      });
+    }
+
+    async function startDirectWith(otherUid){
+      const me = S.me.uid; if(me===otherUid){ toast('That\'s you!'); return; }
+      // Deterministic chat id for 1:1
+      const chatId = ['d', [me, otherUid].sort().join('_')].join('_');
+      const cref = db.ref('chats/'+chatId);
+      const cur = (await cref.get()).val();
+      if(!cur){
+        const other = (await db.ref('users/'+otherUid).get()).val();
+        const meData = (await db.ref('users/'+me).get()).val();
+        const name = other.name;
+        await cref.set({ id:chatId, isGroup:false, name, photoURL: other.photoURL||'', createdBy: me, createdAt: ts() });
+        await db.ref(`memberships/${me}/${chatId}`).set(true);
+        await db.ref(`memberships/${otherUid}/${chatId}`).set(true);
+      }
+      closeSheet('newChatSheet'); openChat(chatId);
+    }
+
+    // Groups
+    function renderGroupPick(){
+      const wrap = $('#groupPick'); wrap.innerHTML='';
+      Object.values(S.contacts).forEach(c=>{
+        const id = 'gp_'+c.uid; const label = document.createElement('label'); label.className='pill';
+        label.innerHTML = `<input type="checkbox" id="${id}" data-uid="${c.uid}" style="accent-color:var(--accent)"/> <img src="${c.photoURL||''}"/> ${esc(c.name||c.email)}`;
+        wrap.appendChild(label);
+      });
+    }
+
+    $('#createGroup').onclick = async()=>{
+      try{
+        const name = $('#groupName').value.trim(); if(name.length<2) throw new Error('Enter a group name');
+        const ids = $$('#groupPick input[type="checkbox"]:checked').map(c=> c.dataset.uid);
+        if(ids.length===0) throw new Error('Pick at least 1 member');
+        const me = S.me.uid;
+        const chatId = 'g_'+db.ref().push().key;
+        let photoURL='';
+        const file = $('#groupPhoto').files?.[0];
+        if(file){ const ref = storage.ref().child('groups/'+chatId+'.jpg'); await ref.put(file); photoURL = await ref.getDownloadURL(); }
+        await db.ref('chats/'+chatId).set({ id:chatId, isGroup:true, name, photoURL, createdBy:me, createdAt:ts() });
+        const members = [me, ...ids];
+        await Promise.all(members.map(uid=> db.ref(`memberships/${uid}/${chatId}`).set(true)));
+        // group members list
+        await Promise.all(members.map(uid=> db.ref(`groupMembers/${chatId}/${uid}`).set(true)));
+        closeSheet('newGroupSheet'); openChat(chatId);
+      }catch(e){ toast(e.message); }
+    };
+
+    // Group manage
+    async function loadGroupManage(){
+      const id = S.currentChatId; if(!id) return; const c = (await db.ref('chats/'+id).get()).val();
+      const membersSnap = await db.ref('groupMembers/'+id).get(); const members = Object.keys(membersSnap.val()||{});
+      $('#gmSummary').innerHTML = `<b>${esc(c.name)}</b> • ${members.length} members`;
+      const list = $('#gmMembers'); list.innerHTML='';
+      for(const uid of members){ const u=(await db.ref('users/'+uid).get()).val(); const div=document.createElement('div'); div.className='pill'; div.innerHTML=`<img src="${u.photoURL||''}"/> ${esc(u.name||u.email)}`; list.appendChild(div); }
+    }
+
+    $('#groupManageBtn').onclick = async()=>{ await loadGroupManage(); openSheet('groupManageSheet'); };
+
+    $('#gmAddBtn').onclick = async()=>{
+      try{
+        const email = $('#gmAddEmail').value.trim().toLowerCase(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Invalid email');
+        const uid = (await db.ref('emails/'+uidFromEmailKey(email)).get()).val(); if(!uid) throw new Error('No user found');
+        await db.ref(`groupMembers/${S.currentChatId}/${uid}`).set(true);
+        await db.ref(`memberships/${uid}/${S.currentChatId}`).set(true);
+        toast('Member added'); loadGroupManage();
+      }catch(e){ toast(e.message); }
+    };
+
+    $('#gmLeave').onclick = async()=>{
+      const me = S.me.uid; const id = S.currentChatId; if(!id) return;
+      await db.ref(`groupMembers/${id}/${me}`).remove();
+      await db.ref(`memberships/${me}/${id}`).remove();
+      toast('You left the group'); $('#chatName').textContent='Select a chat'; $('#msgs').innerHTML='';
+    };
+
+    // Search in chats (client side)
+    $('#search').addEventListener('input', (e)=>{
+      const q = e.target.value.toLowerCase().trim();
+      $$('#chatList .chat-item').forEach(item=>{
+        const name = item.querySelector('.name').textContent.toLowerCase();
+        const last = item.querySelector('.last').textContent.toLowerCase();
+        item.style.display = (name.includes(q) || last.includes(q))? '' : 'none';
+      });
+    });
+
+    // ================ SECURITY RULES (copy into Firebase) ================
+    /*
+    {
+      "rules": {
+        ".read": false,
+        ".write": false,
+        "users": {
+          "$uid": {
+            ".read": "$uid === auth.uid",
+            ".write": "$uid === auth.uid"
+          }
+        },
+        "emails": {
+          "$emailKey": {
+            ".read": false,
+            ".write": "auth != null && query.auth != null" // write only by authenticated app
+          }
+        },
+        "contacts": {
+          "$uid": {
+            ".read": "$uid === auth.uid",
+            ".write": "$uid === auth.uid"
+          }
+        },
+        "chats": {
+          "$chatId": {
+            ".read": "root.child('memberships').child(auth.uid).child($chatId).val() === true",
+            ".write": "root.child('memberships').child(auth.uid).child($chatId).val() === true"
+          }
+        },
+        "messages": {
+          "$chatId": {
+            ".read": "root.child('memberships').child(auth.uid).child($chatId).val() === true",
+            "$msgId": {
+              ".write": "root.child('memberships').child(auth.uid).child($chatId).val() === true && newData.child('from').val() === auth.uid && newData.child('ts').val() <= now + 5000"
+            }
+          }
+        },
+        "memberships": {
+          "$uid": {
+            ".read": "$uid === auth.uid",
+            ".write": "$uid === auth.uid" // members add themselves when joining/creating
+          }
+        },
+        "groupMembers": {
+          "$chatId": {
+            ".read": "root.child('memberships').child(auth.uid).child($chatId).val() === true",
+            ".write": "root.child('memberships').child(auth.uid).child($chatId).val() === true"
+          }
+        },
+        "presence": {
+          "$uid": {
+            ".read": "$uid === auth.uid",
+            ".write": "$uid === auth.uid"
+          }
+        }
+      }
+    }
+    */
+  </script>
+</body>
+</html>
