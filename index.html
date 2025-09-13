@@ -669,24 +669,16 @@
         let eventListenersAttached = false;
         let usersRef = null;
         let messagesRef = null;
-        let userStatusRef = null;
-        let windowId = null;
 
         // Debug logging
         function logDebug(message) {
-            console.log(`[${windowId}] ${message}`);
-            debugContent.innerHTML += `[${windowId}] ${new Date().toLocaleTimeString()}: ${message}<br>`;
+            console.log(message);
+            debugContent.innerHTML += new Date().toLocaleTimeString() + ": " + message + "<br>";
             debugPanel.style.display = 'block';
-        }
-
-        // Generate unique window ID
-        function generateWindowId() {
-            return 'win_' + Math.random().toString(36).substr(2, 9);
         }
 
         // Initialize the app
         function init() {
-            windowId = generateWindowId();
             logDebug("Initializing app");
             
             // Check if Firebase is initialized
@@ -703,7 +695,6 @@
                     currentUser = user;
                     loadUserData();
                     setupUserListener();
-                    setupUserStatusListener();
                     showApp();
                     updateUserInfoPanel();
                 } else {
@@ -729,47 +720,34 @@
             // Auth tabs
             if (loginTab) {
                 loginTab.addEventListener('click', () => {
-                    logDebug("Login tab clicked");
                     loginTab.classList.add('active');
                     registerTab.classList.remove('active');
                     loginForm.classList.add('active');
                     registerForm.classList.remove('active');
                 });
-            } else {
-                logDebug("Login tab element not found");
             }
             
             if (registerTab) {
                 registerTab.addEventListener('click', () => {
-                    logDebug("Register tab clicked");
                     registerTab.classList.add('active');
                     loginTab.classList.remove('active');
                     registerForm.classList.add('active');
                     loginForm.classList.remove('active');
                 });
-            } else {
-                logDebug("Register tab element not found");
             }
             
             // Auth forms
             if (loginForm) {
                 loginForm.addEventListener('submit', handleLogin);
-                logDebug("Login form event listener attached");
-            } else {
-                logDebug("Login form element not found");
             }
             
             if (registerForm) {
                 registerForm.addEventListener('submit', handleRegister);
-                logDebug("Register form event listener attached");
-            } else {
-                logDebug("Register form element not found");
             }
             
             // Logout
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', () => {
-                    logDebug("Logout button clicked");
                     auth.signOut()
                         .then(() => {
                             showNotification('Logged out successfully!', 'success');
@@ -779,59 +757,41 @@
                             showNotification('Error signing out. Please try again.', 'error');
                         });
                 });
-            } else {
-                logDebug("Logout button element not found");
             }
             
             // Send message
             if (sendButton) {
                 sendButton.addEventListener('click', () => {
-                    logDebug("Send button clicked");
                     sendMessage();
                 });
-                logDebug("Send button event listener attached");
-            } else {
-                logDebug("Send button element not found");
             }
             
             if (messageInput) {
                 messageInput.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
-                        logDebug("Enter key pressed in message input");
                         sendMessage();
                     }
                 });
-                logDebug("Message input event listener attached");
-            } else {
-                logDebug("Message input element not found");
             }
             
             // Back button (mobile)
             if (backBtn) {
                 backBtn.addEventListener('click', () => {
-                    logDebug("Back button clicked");
                     sidebar.classList.remove('hidden');
                 });
-            } else {
-                logDebug("Back button element not found");
             }
         }
 
         // Handle login
         function handleLogin(e) {
             e.preventDefault();
-            logDebug("Handling login");
             
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             
-            logDebug("Login attempt with email: " + email);
-            
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Signed in
                     const user = userCredential.user;
-                    logDebug("Login successful for user: " + user.uid);
                     showNotification('Login successful!', 'success');
                     loginForm.reset();
                     loginError.style.display = 'none';
@@ -839,7 +799,6 @@
                 .catch((error) => {
                     const errorCode = error.code;
                     const errorMessage = error.message;
-                    logDebug("Login error: " + errorCode + " - " + errorMessage);
                     
                     if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password') {
                         loginError.textContent = 'Invalid email or password.';
@@ -854,27 +813,21 @@
         // Handle registration
         function handleRegister(e) {
             e.preventDefault();
-            logDebug("Handling registration");
             
             const name = document.getElementById('register-name').value;
             const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
             
-            logDebug("Registration attempt with name: " + name + ", email: " + email);
-            
             auth.createUserWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Signed in
                     const user = userCredential.user;
-                    logDebug("Registration successful for user: " + user.uid);
                     
                     // Save user data to database
                     const userData = {
                         name: name,
                         email: email,
                         status: 'online',
-                        createdAt: new Date().toISOString(),
-                        windowId: windowId
+                        createdAt: new Date().toISOString()
                     };
                     
                     database.ref('users/' + user.uid).set(userData)
@@ -892,7 +845,6 @@
                 .catch((error) => {
                     const errorCode = error.code;
                     const errorMessage = error.message;
-                    logDebug("Registration error: " + errorCode + " - " + errorMessage);
                     
                     if (errorCode === 'auth/email-already-in-use') {
                         registerError.textContent = 'Email is already in use.';
@@ -908,37 +860,28 @@
 
         // Load user data
         function loadUserData() {
-            logDebug("Loading user data for: " + currentUser.uid);
-            
             database.ref('users/' + currentUser.uid).once('value')
                 .then((snapshot) => {
                     if (snapshot.exists()) {
                         const userData = snapshot.val();
-                        logDebug("User data loaded: " + JSON.stringify(userData));
                         userName.textContent = userData.name || 'User';
                         userAvatar.textContent = (userData.name || 'U').charAt(0).toUpperCase();
                         
-                        // Update user status to online and set window ID
+                        // Update user status to online
                         database.ref('users/' + currentUser.uid).update({
-                            status: 'online',
-                            windowId: windowId,
-                            lastSeen: new Date().toISOString()
+                            status: 'online'
                         });
                     } else {
-                        logDebug("No user data found for: " + currentUser.uid);
                         // Create user data if it doesn't exist
                         const userData = {
                             name: currentUser.email.split('@')[0] || 'User',
                             email: currentUser.email,
                             status: 'online',
-                            windowId: windowId,
-                            createdAt: new Date().toISOString(),
-                            lastSeen: new Date().toISOString()
+                            createdAt: new Date().toISOString()
                         };
                         
                         database.ref('users/' + currentUser.uid).set(userData)
                             .then(() => {
-                                logDebug("User data created for: " + currentUser.uid);
                                 userName.textContent = userData.name;
                                 userAvatar.textContent = userData.name.charAt(0).toUpperCase();
                             })
@@ -972,11 +915,8 @@
                 if (snapshot.exists()) {
                     snapshot.forEach((childSnapshot) => {
                         const user = childSnapshot.val();
-                        // Make sure we have a user ID and it's not the current user
-                        // Also make sure the user has a different window ID to avoid showing the same user in multiple windows
-                        if (childSnapshot.key && 
-                            childSnapshot.key !== currentUser.uid && 
-                            (!user.windowId || user.windowId !== windowId)) {
+                        // Only add users that are not the current user
+                        if (childSnapshot.key && childSnapshot.key !== currentUser.uid) {
                             users.push({
                                 id: childSnapshot.key,
                                 ...user
@@ -985,33 +925,8 @@
                     });
                 }
                 
-                logDebug("Loaded " + users.length + " users");
+                logDebug("Loaded " + users.length + " other users");
                 displayUsers();
-            });
-        }
-
-        // Setup user status listener
-        function setupUserStatusListener() {
-            logDebug("Setting up user status listener");
-            
-            // Remove any existing listener
-            if (userStatusRef) {
-                userStatusRef.off();
-            }
-            
-            // Setup new listener for current user's status
-            userStatusRef = database.ref('users/' + currentUser.uid);
-            
-            userStatusRef.on('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    const userData = snapshot.val();
-                    logDebug("Current user status updated: " + JSON.stringify(userData));
-                    
-                    // Update UI with current user data
-                    if (userInfoPanel.style.display !== 'none') {
-                        updateUserInfoPanel();
-                    }
-                }
             });
         }
 
@@ -1045,16 +960,10 @@
                 messagesRef = null;
             }
             
-            if (userStatusRef) {
-                userStatusRef.off();
-                userStatusRef = null;
-            }
-            
             // Update user status to offline
             if (currentUser) {
                 database.ref('users/' + currentUser.uid).update({
-                    status: 'offline',
-                    lastSeen: new Date().toISOString()
+                    status: 'offline'
                 }).catch((error) => {
                     logDebug("Error updating user status to offline: " + error.message);
                 });
@@ -1067,7 +976,7 @@
             chatList.innerHTML = '';
             
             if (users.length === 0) {
-                logDebug("No users to display");
+                logDebug("No other users to display");
                 chatList.innerHTML = '<div style="padding: 20px; text-align: center; color: #777;">No other users found. Please register another account to test.</div>';
                 return;
             }
@@ -1093,7 +1002,6 @@
                 `;
                 
                 chatItem.addEventListener('click', () => {
-                    logDebug("Chat item clicked for user: " + user.id);
                     selectChat(user);
                 });
                 
@@ -1238,8 +1146,7 @@
             const message = {
                 text: text,
                 senderId: currentUser.uid,
-                timestamp: timestamp,
-                windowId: windowId
+                timestamp: timestamp
             };
             
             database.ref('messages/' + chatId).push(message)
@@ -1290,8 +1197,7 @@
             if (currentUser) {
                 // Update user status to offline when page is unloaded
                 database.ref('users/' + currentUser.uid).update({
-                    status: 'offline',
-                    lastSeen: new Date().toISOString()
+                    status: 'offline'
                 }).catch((error) => {
                     console.error("Error updating user status on page unload:", error);
                 });
