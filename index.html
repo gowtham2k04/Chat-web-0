@@ -435,6 +435,28 @@
             z-index: 1001;
         }
         
+        .user-info-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1001;
+            max-width: 250px;
+        }
+        
+        .user-info-panel h3 {
+            margin-bottom: 10px;
+            color: #128C7E;
+        }
+        
+        .user-info-panel p {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
@@ -567,6 +589,15 @@
     <div class="debug-panel" id="debug-panel" style="display: none;">
         <div id="debug-content"></div>
     </div>
+    
+    <!-- User Info Panel -->
+    <div class="user-info-panel" id="user-info-panel" style="display: none;">
+        <h3>Current User</h3>
+        <p><strong>ID:</strong> <span id="current-user-id"></span></p>
+        <p><strong>Name:</strong> <span id="current-user-name"></span></p>
+        <p><strong>Email:</strong> <span id="current-user-email"></span></p>
+        <p><strong>Status:</strong> <span id="current-user-status"></span></p>
+    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
@@ -624,6 +655,11 @@
         const notification = document.getElementById('notification');
         const debugPanel = document.getElementById('debug-panel');
         const debugContent = document.getElementById('debug-content');
+        const userInfoPanel = document.getElementById('user-info-panel');
+        const currentUserId = document.getElementById('current-user-id');
+        const currentUserName = document.getElementById('current-user-name');
+        const currentUserEmail = document.getElementById('current-user-email');
+        const currentUserStatus = document.getElementById('current-user-status');
 
         // State
         let currentUser = null;
@@ -632,16 +668,25 @@
         let messages = [];
         let eventListenersAttached = false;
         let usersRef = null;
+        let messagesRef = null;
+        let userStatusRef = null;
+        let windowId = null;
 
         // Debug logging
         function logDebug(message) {
-            console.log(message);
-            debugContent.innerHTML += new Date().toLocaleTimeString() + ": " + message + "<br>";
+            console.log(`[${windowId}] ${message}`);
+            debugContent.innerHTML += `[${windowId}] ${new Date().toLocaleTimeString()}: ${message}<br>`;
             debugPanel.style.display = 'block';
+        }
+
+        // Generate unique window ID
+        function generateWindowId() {
+            return 'win_' + Math.random().toString(36).substr(2, 9);
         }
 
         // Initialize the app
         function init() {
+            windowId = generateWindowId();
             logDebug("Initializing app");
             
             // Check if Firebase is initialized
@@ -653,19 +698,19 @@
             
             // Check authentication state
             auth.onAuthStateChanged((user) => {
-                logDebug("Auth state changed: " + (user ? "User logged in" : "User logged out"));
+                logDebug("Auth state changed: " + (user ? "User logged in: " + user.uid : "User logged out"));
                 if (user) {
                     currentUser = user;
                     loadUserData();
                     setupUserListener();
+                    setupUserStatusListener();
                     showApp();
+                    updateUserInfoPanel();
                 } else {
                     currentUser = null;
-                    if (usersRef) {
-                        usersRef.off();
-                        usersRef = null;
-                    }
+                    cleanupListeners();
                     showAuth();
+                    hideUserInfoPanel();
                 }
             });
             
@@ -828,7 +873,8 @@
                         name: name,
                         email: email,
                         status: 'online',
-                        createdAt: new Date().toISOString()
+                        createdAt: new Date().toISOString(),
+                        windowId: windowId
                     };
                     
                     database.ref('users/' + user.uid).set(userData)
@@ -872,9 +918,11 @@
                         userName.textContent = userData.name || 'User';
                         userAvatar.textContent = (userData.name || 'U').charAt(0).toUpperCase();
                         
-                        // Update user status to online
+                        // Update user status to online and set window ID
                         database.ref('users/' + currentUser.uid).update({
-                            status: 'online'
+                            status: 'online',
+                            windowId: windowId,
+                            lastSeen: new Date().toISOString()
                         });
                     } else {
                         logDebug("No user data found for: " + currentUser.uid);
@@ -883,7 +931,9 @@
                             name: currentUser.email.split('@')[0] || 'User',
                             email: currentUser.email,
                             status: 'online',
-                            createdAt: new Date().toISOString()
+                            windowId: windowId,
+                            createdAt: new Date().toISOString(),
+                            lastSeen: new Date().toISOString()
                         };
                         
                         database.ref('users/' + currentUser.uid).set(userData)
@@ -923,7 +973,10 @@
                     snapshot.forEach((childSnapshot) => {
                         const user = childSnapshot.val();
                         // Make sure we have a user ID and it's not the current user
-                        if (childSnapshot.key && childSnapshot.key !== currentUser.uid) {
+                        // Also make sure the user has a different window ID to avoid showing the same user in multiple windows
+                        if (childSnapshot.key && 
+                            childSnapshot.key !== currentUser.uid && 
+                            (!user.windowId || user.windowId !== windowId)) {
                             users.push({
                                 id: childSnapshot.key,
                                 ...user
@@ -935,6 +988,77 @@
                 logDebug("Loaded " + users.length + " users");
                 displayUsers();
             });
+        }
+
+        // Setup user status listener
+        function setupUserStatusListener() {
+            logDebug("Setting up user status listener");
+            
+            // Remove any existing listener
+            if (userStatusRef) {
+                userStatusRef.off();
+            }
+            
+            // Setup new listener for current user's status
+            userStatusRef = database.ref('users/' + currentUser.uid);
+            
+            userStatusRef.on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    logDebug("Current user status updated: " + JSON.stringify(userData));
+                    
+                    // Update UI with current user data
+                    if (userInfoPanel.style.display !== 'none') {
+                        updateUserInfoPanel();
+                    }
+                }
+            });
+        }
+
+        // Update user info panel
+        function updateUserInfoPanel() {
+            if (currentUser) {
+                currentUserId.textContent = currentUser.uid;
+                currentUserName.textContent = userName.textContent;
+                currentUserEmail.textContent = currentUser.email;
+                currentUserStatus.textContent = 'Online';
+                userInfoPanel.style.display = 'block';
+            }
+        }
+
+        // Hide user info panel
+        function hideUserInfoPanel() {
+            userInfoPanel.style.display = 'none';
+        }
+
+        // Cleanup listeners
+        function cleanupListeners() {
+            logDebug("Cleaning up listeners");
+            
+            if (usersRef) {
+                usersRef.off();
+                usersRef = null;
+            }
+            
+            if (messagesRef) {
+                messagesRef.off();
+                messagesRef = null;
+            }
+            
+            if (userStatusRef) {
+                userStatusRef.off();
+                userStatusRef = null;
+            }
+            
+            // Update user status to offline
+            if (currentUser) {
+                database.ref('users/' + currentUser.uid).update({
+                    status: 'offline',
+                    lastSeen: new Date().toISOString()
+                }).catch((error) => {
+                    logDebug("Error updating user status to offline: " + error.message);
+                });
+            }
         }
 
         // Display users in chat list
@@ -1020,15 +1144,15 @@
             const chatId = getChatId(currentUser.uid, activeChat.id);
             
             // Remove any existing message listener
-            if (window.messagesRef) {
-                window.messagesRef.off();
+            if (messagesRef) {
+                messagesRef.off();
             }
             
             // Setup new message listener
-            window.messagesRef = database.ref('messages/' + chatId);
+            messagesRef = database.ref('messages/' + chatId);
             
             // Load existing messages
-            window.messagesRef.once('value')
+            messagesRef.once('value')
                 .then((snapshot) => {
                     messages = [];
                     if (snapshot.exists()) {
@@ -1054,7 +1178,7 @@
                 });
             
             // Listen for new messages
-            window.messagesRef.on('child_added', (snapshot) => {
+            messagesRef.on('child_added', (snapshot) => {
                 const newMessage = {
                     id: snapshot.key,
                     ...snapshot.val()
@@ -1114,7 +1238,8 @@
             const message = {
                 text: text,
                 senderId: currentUser.uid,
-                timestamp: timestamp
+                timestamp: timestamp,
+                windowId: windowId
             };
             
             database.ref('messages/' + chatId).push(message)
@@ -1159,6 +1284,19 @@
             authContainer.style.display = 'none';
             appContainer.style.display = 'flex';
         }
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (currentUser) {
+                // Update user status to offline when page is unloaded
+                database.ref('users/' + currentUser.uid).update({
+                    status: 'offline',
+                    lastSeen: new Date().toISOString()
+                }).catch((error) => {
+                    console.error("Error updating user status on page unload:", error);
+                });
+            }
+        });
 
         // Initialize the app when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
