@@ -4,609 +4,449 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp Clone</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         body {
             background-color: #f0f2f5;
-            color: #333;
             height: 100vh;
-            overflow: hidden;
-        }
-        
-        .app-container {
-            display: flex;
-            height: 100vh;
-            max-width: 1400px;
-            margin: 0 auto;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Auth Section */
-        .auth-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+        }
+
+        .app-container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            height: 90vh;
+            background-color: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
             background-color: #f0f2f5;
         }
-        
-        .auth-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+
+        .login-container h1 {
+            color: #128C7E;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .login-form {
             width: 100%;
             max-width: 400px;
+            background-color: white;
             padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
-        
-        .auth-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .auth-header h1 {
-            color: #128C7E;
-            margin-bottom: 10px;
-        }
-        
-        .auth-tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .auth-tab {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            color: #7f8c8d;
-            transition: color 0.3s;
-        }
-        
-        .auth-tab.active {
-            color: #128C7E;
-            border-bottom: 2px solid #128C7E;
-        }
-        
-        .auth-form {
-            display: none;
-        }
-        
-        .auth-form.active {
-            display: block;
-        }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
+            color: #4a4a4a;
             font-weight: 600;
         }
-        
+
         .form-group input {
             width: 100%;
-            padding: 12px;
+            padding: 12px 15px;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
+            border-radius: 5px;
+            font-size: 16px;
         }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #128C7E;
-        }
-        
-        .auth-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-        }
-        
-        .auth-error {
-            color: #e74c3c;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            display: none;
-        }
-        
+
         .btn {
-            display: inline-block;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
             background-color: #128C7E;
             color: white;
-            padding: 12px 25px;
-            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #0d6e60;
+        }
+
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .auth-toggle a {
+            color: #128C7E;
             text-decoration: none;
             font-weight: 600;
-            transition: background-color 0.3s;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
         }
-        
-        .btn:hover {
-            background-color: #0f6f65;
-        }
-        
-        .btn-secondary {
-            background-color: #dc3545;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #c82333;
-        }
-        
-        /* WhatsApp UI */
-        .whatsapp-container {
-            display: none;
-            height: 100vh;
-            width: 100%;
-        }
-        
+
+        /* Sidebar */
         .sidebar {
             width: 35%;
-            background-color: #ffffff;
-            border-right: 1px solid #e0e0e0;
+            background-color: #ededed;
+            border-right: 1px solid #ddd;
             display: flex;
             flex-direction: column;
         }
-        
+
         .sidebar-header {
+            padding: 15px;
+            background-color: #128C7E;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 15px;
-            background-color: #f0f2f5;
-            border-bottom: 1px solid #e0e0e0;
         }
-        
+
         .user-info {
             display: flex;
             align-items: center;
         }
-        
+
         .user-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: #128C7E;
+            background-color: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: white;
-            font-weight: bold;
             margin-right: 10px;
+            color: #128C7E;
+            font-weight: bold;
         }
-        
-        .user-name {
-            font-weight: 600;
-        }
-        
-        .sidebar-actions {
-            display: flex;
-        }
-        
-        .sidebar-actions button {
-            background: none;
-            border: none;
-            color: #54656f;
-            font-size: 1.2rem;
-            margin-left: 15px;
-            cursor: pointer;
-        }
-        
-        .search-container {
-            padding: 10px;
+
+        .search-box {
+            padding: 15px;
             background-color: #f0f2f5;
         }
-        
-        .search-box {
+
+        .search-box input {
             width: 100%;
             padding: 10px 15px;
-            border-radius: 20px;
             border: none;
-            background-color: #ffffff;
-            color: #333;
-            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            background-color: white;
         }
-        
-        .chat-list {
+
+        .users-list {
             flex: 1;
             overflow-y: auto;
         }
-        
-        .chat-item {
+
+        .user-item {
             display: flex;
             align-items: center;
             padding: 15px;
-            border-bottom: 1px solid #f0f2f5;
+            border-bottom: 1px solid #ddd;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.2s;
         }
-        
-        .chat-item:hover {
-            background-color: #f0f2f5;
+
+        .user-item:hover {
+            background-color: #e0e0e0;
         }
-        
-        .chat-item.active {
-            background-color: #e9ebeb;
+
+        .user-item.active {
+            background-color: #d0f0ea;
         }
-        
-        .chat-avatar {
-            width: 50px;
-            height: 50px;
+
+        .user-status {
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background-color: #128C7E;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-weight: bold;
-            margin-right: 15px;
-        }
-        
-        .chat-details {
-            flex: 1;
-        }
-        
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-        
-        .chat-name {
-            font-weight: 600;
-        }
-        
-        .chat-time {
-            font-size: 0.8rem;
-            color: #777;
-        }
-        
-        .chat-preview {
-            font-size: 0.9rem;
-            color: #777;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px;
-        }
-        
-        .chat-main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: #efe9e4;
-        }
-        
-        .chat-header-main {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background-color: #f0f2f5;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .back-button {
-            display: none;
-            background: none;
-            border: none;
-            color: #54656f;
-            font-size: 1.2rem;
-            margin-right: 15px;
-            cursor: pointer;
-        }
-        
-        .chat-status {
-            font-size: 0.8rem;
-            color: #777;
-        }
-        
-        .chat-actions-main {
-            display: flex;
+            background-color: #4CAF50;
             margin-left: auto;
         }
-        
-        .chat-actions-main button {
-            background: none;
-            border: none;
-            color: #54656f;
-            font-size: 1.2rem;
-            margin-left: 15px;
-            cursor: pointer;
+
+        /* Main Chat */
+        .main-chat {
+            width: 65%;
+            display: flex;
+            flex-direction: column;
         }
-        
-        .messages-container {
+
+        .chat-header {
+            padding: 15px;
+            background-color: #f0f2f5;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-header .user-avatar {
+            margin-right: 15px;
+        }
+
+        .chat-messages {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
+            background-color: #e5ddd5;
+            background-image: url('https://web.whatsapp.com/img/bg-chat-tile_9e8a2898faedb7db9bf5638405cf81ae.png');
         }
-        
+
         .message {
+            margin-bottom: 15px;
+            display: flex;
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message-content {
             max-width: 70%;
-            margin-bottom: 10px;
             padding: 10px 15px;
-            border-radius: 8px;
+            border-radius: 10px;
             position: relative;
         }
-        
-        .message.sent {
-            align-self: flex-end;
+
+        .message.received .message-content {
+            background-color: white;
+            border-bottom-left-radius: 0;
+        }
+
+        .message.sent .message-content {
             background-color: #dcf8c6;
             border-bottom-right-radius: 0;
         }
-        
-        .message.received {
-            align-self: flex-start;
-            background-color: #ffffff;
-            border-bottom-left-radius: 0;
-        }
-        
-        .message-text {
-            word-wrap: break-word;
-        }
-        
+
         .message-time {
-            font-size: 0.7rem;
+            font-size: 12px;
             color: #777;
-            text-align: right;
             margin-top: 5px;
+            text-align: right;
         }
-        
-        .message-input-container {
-            display: flex;
-            align-items: center;
+
+        .message-input {
             padding: 15px;
             background-color: #f0f2f5;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid #ddd;
+            display: flex;
+            align-items: center;
         }
-        
-        .message-input {
+
+        .message-input input {
             flex: 1;
             padding: 10px 15px;
+            border: none;
             border-radius: 20px;
-            border: none;
-            background-color: #ffffff;
-            color: #333;
-            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            margin-right: 10px;
         }
-        
-        .send-button {
-            background: none;
+
+        .message-input button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             border: none;
-            color: #128C7E;
-            font-size: 1.5rem;
-            margin-left: 15px;
+            background-color: #128C7E;
+            color: white;
             cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        
+
+        .empty-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #999;
+        }
+
+        .empty-chat i {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+
         .notification {
             position: fixed;
             top: 20px;
             right: 20px;
             padding: 15px 20px;
-            border-radius: 4px;
+            background-color: #333;
             color: white;
-            font-weight: 500;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            transform: translateY(-100px);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
             z-index: 1000;
-            transform: translateX(150%);
-            transition: transform 0.3s ease-out;
         }
-        
+
         .notification.show {
-            transform: translateX(0);
+            transform: translateY(0);
+            opacity: 1;
         }
-        
+
         .notification.success {
-            background-color: #28a745;
+            background-color: #4CAF50;
         }
-        
+
         .notification.error {
-            background-color: #dc3545;
+            background-color: #f44336;
         }
-        
-        .debug-panel {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            max-width: 300px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1001;
-        }
-        
-        .user-info-panel {
-            position: fixed;
-            top: 80px;
-            left: 20px;
-            background: rgba(255,255,255,0.9);
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 1001;
-            max-width: 250px;
-        }
-        
-        .user-info-panel h3 {
-            margin-bottom: 10px;
-            color: #128C7E;
-        }
-        
-        .user-info-panel p {
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-        
-        /* Responsive */
+
         @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+
             .sidebar {
                 width: 100%;
-                position: absolute;
-                z-index: 10;
-                transform: translateX(0);
-                transition: transform 0.3s ease;
+                height: 40%;
             }
-            
-            .sidebar.hidden {
-                transform: translateX(-100%);
-            }
-            
-            .chat-main {
+
+            .main-chat {
                 width: 100%;
-            }
-            
-            .back-button {
-                display: block;
-            }
-            
-            .chat-preview {
-                max-width: 150px;
+                height: 60%;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Auth Section -->
-    <div class="auth-container" id="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <h1>WhatsApp Clone</h1>
-                <p>Sign in to continue to your account</p>
+    <div class="app-container">
+        <!-- Login Screen -->
+        <div class="login-container" id="loginContainer">
+            <h1><i class="fab fa-whatsapp"></i> WhatsApp Clone</h1>
+            <div class="login-form">
+                <div id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter your password">
+                    </div>
+                    <button class="btn" id="loginBtn">Login</button>
+                    <div class="auth-toggle">
+                        Don't have an account? <a href="#" id="showRegister">Register</a>
+                    </div>
+                </div>
+                
+                <div id="registerForm" style="display: none;">
+                    <div class="form-group">
+                        <label for="regName">Full Name</label>
+                        <input type="text" id="regName" placeholder="Enter your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">Email</label>
+                        <input type="email" id="regEmail" placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" placeholder="Enter your password">
+                    </div>
+                    <button class="btn" id="registerBtn">Register</button>
+                    <button class="btn btn-secondary" id="showLogin">Back to Login</button>
+                </div>
             </div>
-            <div class="auth-tabs">
-                <div class="auth-tab active" id="login-tab">Login</div>
-                <div class="auth-tab" id="register-tab">Register</div>
-            </div>
-            
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form active">
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" required>
-                </div>
-                <div class="auth-actions">
-                    <button type="submit" class="btn">Login</button>
-                </div>
-                <div class="auth-error" id="login-error"></div>
-            </form>
-            
-            <!-- Register Form -->
-            <form id="register-form" class="auth-form">
-                <div class="form-group">
-                    <label for="register-name">Full Name</label>
-                    <input type="text" id="register-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-email">Email</label>
-                    <input type="email" id="register-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-password">Password</label>
-                    <input type="password" id="register-password" required>
-                </div>
-                <div class="auth-actions">
-                    <button type="submit" class="btn">Register</button>
-                </div>
-                <div class="auth-error" id="register-error"></div>
-            </form>
         </div>
-    </div>
 
-    <!-- WhatsApp UI -->
-    <div class="app-container" id="app-container" style="display: none;">
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="user-info">
-                    <div class="user-avatar" id="user-avatar"></div>
-                    <div class="user-name" id="user-name"></div>
+        <!-- Chat App -->
+        <div class="chat-app" id="chatApp" style="display: none;">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="user-info">
+                        <div class="user-avatar" id="currentUserAvatar">U</div>
+                        <div>
+                            <div id="currentUserName">User</div>
+                        </div>
+                    </div>
+                    <button class="btn" id="logoutBtn" style="width: auto; padding: 8px 15px; font-size: 14px;">Logout</button>
                 </div>
-                <div class="sidebar-actions">
-                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
+                
+                <div class="search-box">
+                    <input type="text" placeholder="Search or start new chat">
                 </div>
-            </div>
-            <div class="search-container">
-                <input type="text" class="search-box" placeholder="Search or start new chat">
-            </div>
-            <div class="chat-list" id="chat-list">
-                <!-- Chat items will be loaded here -->
-            </div>
-        </div>
-        
-        <div class="chat-main">
-            <div class="chat-header-main">
-                <button class="back-button" id="back-button"><i class="fas fa-arrow-left"></i></button>
-                <div class="chat-avatar" id="active-chat-avatar"></div>
-                <div>
-                    <div class="chat-name" id="active-chat-name">Select a chat</div>
-                    <div class="chat-status" id="active-chat-status"></div>
-                </div>
-                <div class="chat-actions-main">
-                    <button><i class="fas fa-phone"></i></button>
-                    <button><i class="fas fa-video"></i></button>
-                    <button><i class="fas fa-ellipsis-v"></i></button>
+                
+                <div class="users-list" id="usersList">
+                    <!-- Users will be loaded here -->
                 </div>
             </div>
-            <div class="messages-container" id="messages-container">
-                <!-- Messages will be loaded here -->
-            </div>
-            <div class="message-input-container">
-                <button><i class="fas fa-plus"></i></button>
-                <input type="text" class="message-input" id="message-input" placeholder="Type a message">
-                <button><i class="fas fa-microphone"></i></button>
-                <button class="send-button" id="send-button"><i class="fas fa-paper-plane"></i></button>
+            
+            <!-- Main Chat -->
+            <div class="main-chat">
+                <div class="chat-header" id="chatHeader" style="display: none;">
+                    <div class="user-avatar" id="chatUserAvatar">C</div>
+                    <div>
+                        <div id="chatUserName">Select a user to chat</div>
+                    </div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <div class="empty-chat" id="emptyChat">
+                        <i class="fas fa-comments"></i>
+                        <h3>Select a user to start chatting</h3>
+                        <p>Your messages will appear here</p>
+                    </div>
+                </div>
+                
+                <div class="message-input" id="messageInput" style="display: none;">
+                    <input type="text" id="messageText" placeholder="Type a message">
+                    <button id="sendBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Notification -->
     <div class="notification" id="notification"></div>
-    
-    <!-- Debug Panel -->
-    <div class="debug-panel" id="debug-panel" style="display: none;">
-        <div id="debug-content"></div>
-    </div>
-    
-    <!-- User Info Panel -->
-    <div class="user-info-panel" id="user-info-panel" style="display: none;">
-        <h3>Current User</h3>
-        <p><strong>ID:</strong> <span id="current-user-id"></span></p>
-        <p><strong>Name:</strong> <span id="current-user-name"></span></p>
-        <p><strong>Email:</strong> <span id="current-user-email"></span></p>
-        <p><strong>Status:</strong> <span id="current-user-status"></span></p>
-        <p><strong>Session ID:</strong> <span id="current-session-id"></span></p>
-    </div>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+
     <script>
-        // Your web app's Firebase configuration
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDIoHic0L28oUaa5ENtcdFhwKISyK7K5is",
             authDomain: "employee-eff4d.firebaseapp.com",
@@ -619,599 +459,40 @@
         };
 
         // Initialize Firebase
-        let app;
-        let database;
-        let auth;
-        
-        try {
-            app = firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            auth = firebase.auth();
-            console.log("Firebase initialized successfully");
-        } catch (error) {
-            console.error("Firebase initialization error:", error);
-        }
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
 
         // DOM Elements
-        const authContainer = document.getElementById('auth-container');
-        const appContainer = document.getElementById('app-container');
-        const loginTab = document.getElementById('login-tab');
-        const registerTab = document.getElementById('register-tab');
-        const loginForm = document.getElementById('login-form');
-        const registerForm = document.getElementById('register-form');
-        const loginError = document.getElementById('login-error');
-        const registerError = document.getElementById('register-error');
-        const userAvatar = document.getElementById('user-avatar');
-        const userName = document.getElementById('user-name');
-        const logoutBtn = document.getElementById('logout-btn');
-        const chatList = document.getElementById('chat-list');
-        const messagesContainer = document.getElementById('messages-container');
-        const messageInput = document.getElementById('message-input');
-        const sendButton = document.getElementById('send-button');
-        const activeChatName = document.getElementById('active-chat-name');
-        const activeChatAvatar = document.getElementById('active-chat-avatar');
-        const activeChatStatus = document.getElementById('active-chat-status');
-        const backBtn = document.getElementById('back-button');
-        const sidebar = document.getElementById('sidebar');
+        const loginContainer = document.getElementById('loginContainer');
+        const chatApp = document.getElementById('chatApp');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const usersList = document.getElementById('usersList');
+        const chatHeader = document.getElementById('chatHeader');
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const messageText = document.getElementById('messageText');
+        const sendBtn = document.getElementById('sendBtn');
+        const emptyChat = document.getElementById('emptyChat');
         const notification = document.getElementById('notification');
-        const debugPanel = document.getElementById('debug-panel');
-        const debugContent = document.getElementById('debug-content');
-        const userInfoPanel = document.getElementById('user-info-panel');
-        const currentUserId = document.getElementById('current-user-id');
-        const currentUserName = document.getElementById('current-user-name');
-        const currentUserEmail = document.getElementById('current-user-email');
-        const currentUserStatus = document.getElementById('current-user-status');
-        const currentSessionId = document.getElementById('current-session-id');
+        const currentUserName = document.getElementById('currentUserName');
+        const currentUserAvatar = document.getElementById('currentUserAvatar');
+        const chatUserName = document.getElementById('chatUserName');
+        const chatUserAvatar = document.getElementById('chatUserAvatar');
 
-        // State
+        // Global Variables
         let currentUser = null;
+        let selectedUser = null;
         let users = [];
-        let activeChat = null;
-        let messages = [];
-        let eventListenersAttached = false;
-        let usersRef = null;
-        let messagesRef = null;
-        let tabSessionId = null;
-
-        // Debug logging
-        function logDebug(message) {
-            console.log(message);
-            debugContent.innerHTML += new Date().toLocaleTimeString() + ": " + message + "<br>";
-            debugPanel.style.display = 'block';
-        }
-
-        // Generate unique session ID for this tab
-        function generateSessionId() {
-            return 'session_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
-        }
-
-        // Initialize the app
-        function init() {
-            // Generate a unique session ID for this tab
-            tabSessionId = generateSessionId();
-            logDebug("Initializing app with session ID: " + tabSessionId);
-            
-            // Check if Firebase is initialized
-            if (!app || !database || !auth) {
-                logDebug("Firebase not properly initialized");
-                showNotification('Firebase not initialized. Please check your configuration.', 'error');
-                return;
-            }
-            
-            // Check authentication state
-            auth.onAuthStateChanged(async (user) => {
-                logDebug("Auth state changed: " + (user ? "User logged in: " + user.uid : "User logged out"));
-                
-                if (user) {
-                    // Check if this session is valid for this tab
-                    const userSessionValid = await validateUserSession(user);
-                    
-                    if (userSessionValid) {
-                        currentUser = user;
-                        loadUserData();
-                        setupUserListener();
-                        showApp();
-                        updateUserInfoPanel();
-                    } else {
-                        // Session is not valid for this tab, sign out
-                        logDebug("Session not valid for this tab, signing out");
-                        auth.signOut();
-                        showAuth();
-                    }
-                } else {
-                    currentUser = null;
-                    cleanupListeners();
-                    showAuth();
-                    hideUserInfoPanel();
-                }
-            });
-            
-            // Only attach event listeners once
-            if (!eventListenersAttached) {
-                setupEventListeners();
-                eventListenersAttached = true;
-                logDebug("Event listeners attached");
-            }
-        }
-
-        // Validate user session for this tab
-        async function validateUserSession(user) {
-            try {
-                // Get user data from Firebase
-                const snapshot = await database.ref('users/' + user.uid).once('value');
-                
-                if (snapshot.exists()) {
-                    const userData = snapshot.val();
-                    
-                    // Check if user has a session ID and if it matches this tab's session ID
-                    if (userData.sessionId && userData.sessionId !== tabSessionId) {
-                        logDebug("User session ID mismatch. User: " + userData.sessionId + ", Tab: " + tabSessionId);
-                        return false;
-                    }
-                }
-                
-                return true;
-            } catch (error) {
-                console.error("Error validating user session:", error);
-                logDebug("Error validating user session: " + error.message);
-                return false;
-            }
-        }
-
-        // Setup event listeners
-        function setupEventListeners() {
-            logDebug("Setting up event listeners");
-            
-            // Auth tabs
-            if (loginTab) {
-                loginTab.addEventListener('click', () => {
-                    loginTab.classList.add('active');
-                    registerTab.classList.remove('active');
-                    loginForm.classList.add('active');
-                    registerForm.classList.remove('active');
-                });
-            }
-            
-            if (registerTab) {
-                registerTab.addEventListener('click', () => {
-                    registerTab.classList.add('active');
-                    loginTab.classList.remove('active');
-                    registerForm.classList.add('active');
-                    loginForm.classList.remove('active');
-                });
-            }
-            
-            // Auth forms
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleLogin);
-            }
-            
-            if (registerForm) {
-                registerForm.addEventListener('submit', handleRegister);
-            }
-            
-            // Logout
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', () => {
-                    auth.signOut()
-                        .then(() => {
-                            showNotification('Logged out successfully!', 'success');
-                        })
-                        .catch((error) => {
-                            console.error("Error signing out:", error);
-                            showNotification('Error signing out. Please try again.', 'error');
-                        });
-                });
-            }
-            
-            // Send message
-            if (sendButton) {
-                sendButton.addEventListener('click', () => {
-                    sendMessage();
-                });
-            }
-            
-            if (messageInput) {
-                messageInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        sendMessage();
-                    }
-                });
-            }
-            
-            // Back button (mobile)
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    sidebar.classList.remove('hidden');
-                });
-            }
-        }
-
-        // Handle login
-        async function handleLogin(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            
-            try {
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                
-                // Update user session ID to this tab's session ID
-                await database.ref('users/' + user.uid).update({
-                    sessionId: tabSessionId,
-                    status: 'online'
-                });
-                
-                showNotification('Login successful!', 'success');
-                loginForm.reset();
-                loginError.style.display = 'none';
-            } catch (error) {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                
-                if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password') {
-                    loginError.textContent = 'Invalid email or password.';
-                } else {
-                    loginError.textContent = errorMessage;
-                }
-                
-                loginError.style.display = 'block';
-            }
-        }
-
-        // Handle registration
-        async function handleRegister(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('register-name').value;
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            
-            try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                
-                // Save user data to database with this tab's session ID
-                const userData = {
-                    name: name,
-                    email: email,
-                    sessionId: tabSessionId,
-                    status: 'online',
-                    createdAt: new Date().toISOString()
-                };
-                
-                await database.ref('users/' + user.uid).set(userData);
-                
-                showNotification('Registration successful!', 'success');
-                registerForm.reset();
-                registerError.style.display = 'none';
-            } catch (error) {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                
-                if (errorCode === 'auth/email-already-in-use') {
-                    registerError.textContent = 'Email is already in use.';
-                } else if (errorCode === 'auth/weak-password') {
-                    registerError.textContent = 'Password is too weak.';
-                } else {
-                    registerError.textContent = errorMessage;
-                }
-                
-                registerError.style.display = 'block';
-            }
-        }
-
-        // Load user data
-        async function loadUserData() {
-            try {
-                const snapshot = await database.ref('users/' + currentUser.uid).once('value');
-                
-                if (snapshot.exists()) {
-                    const userData = snapshot.val();
-                    userName.textContent = userData.name || 'User';
-                    userAvatar.textContent = (userData.name || 'U').charAt(0).toUpperCase();
-                    
-                    // Update user status to online and session ID
-                    await database.ref('users/' + currentUser.uid).update({
-                        status: 'online',
-                        sessionId: tabSessionId
-                    });
-                } else {
-                    // Create user data if it doesn't exist
-                    const userData = {
-                        name: currentUser.email.split('@')[0] || 'User',
-                        email: currentUser.email,
-                        sessionId: tabSessionId,
-                        status: 'online',
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    await database.ref('users/' + currentUser.uid).set(userData);
-                    userName.textContent = userData.name;
-                    userAvatar.textContent = userData.name.charAt(0).toUpperCase();
-                }
-            } catch (error) {
-                console.error("Error loading user data:", error);
-                logDebug("Error loading user data: " + error.message);
-            }
-        }
-
-        // Setup real-time listener for users
-        function setupUserListener() {
-            logDebug("Setting up user listener");
-            
-            // Remove any existing listener
-            if (usersRef) {
-                usersRef.off();
-            }
-            
-            // Setup new listener
-            usersRef = database.ref('users');
-            
-            usersRef.on('value', (snapshot) => {
-                logDebug("Users data updated");
-                users = [];
-                
-                if (snapshot.exists()) {
-                    snapshot.forEach((childSnapshot) => {
-                        const user = childSnapshot.val();
-                        // Only add users that are not the current user
-                        if (childSnapshot.key && childSnapshot.key !== currentUser.uid) {
-                            users.push({
-                                id: childSnapshot.key,
-                                ...user
-                            });
-                        }
-                    });
-                }
-                
-                logDebug("Loaded " + users.length + " other users");
-                displayUsers();
-            });
-        }
-
-        // Update user info panel
-        function updateUserInfoPanel() {
-            if (currentUser) {
-                currentUserId.textContent = currentUser.uid;
-                currentUserName.textContent = userName.textContent;
-                currentUserEmail.textContent = currentUser.email;
-                currentUserStatus.textContent = 'Online';
-                currentSessionId.textContent = tabSessionId;
-                userInfoPanel.style.display = 'block';
-            }
-        }
-
-        // Hide user info panel
-        function hideUserInfoPanel() {
-            userInfoPanel.style.display = 'none';
-        }
-
-        // Cleanup listeners
-        function cleanupListeners() {
-            logDebug("Cleaning up listeners");
-            
-            if (usersRef) {
-                usersRef.off();
-                usersRef = null;
-            }
-            
-            if (messagesRef) {
-                messagesRef.off();
-                messagesRef = null;
-            }
-            
-            // Update user status to offline
-            if (currentUser) {
-                database.ref('users/' + currentUser.uid).update({
-                    status: 'offline'
-                }).catch((error) => {
-                    logDebug("Error updating user status to offline: " + error.message);
-                });
-            }
-        }
-
-        // Display users in chat list
-        function displayUsers() {
-            logDebug("Displaying users");
-            chatList.innerHTML = '';
-            
-            if (users.length === 0) {
-                logDebug("No other users to display");
-                chatList.innerHTML = '<div style="padding: 20px; text-align: center; color: #777;">No other users found. Please register another account to test.</div>';
-                return;
-            }
-            
-            users.forEach((user) => {
-                const chatItem = document.createElement('div');
-                chatItem.className = 'chat-item';
-                chatItem.dataset.userId = user.id;
-                
-                // Use name or email as fallback
-                const displayName = user.name || user.email || 'Unknown User';
-                const initials = displayName.charAt(0).toUpperCase();
-                
-                chatItem.innerHTML = `
-                    <div class="chat-avatar">${initials}</div>
-                    <div class="chat-details">
-                        <div class="chat-header">
-                            <div class="chat-name">${displayName}</div>
-                            <div class="chat-time">${user.status === 'online' ? 'Online' : 'Offline'}</div>
-                        </div>
-                        <div class="chat-preview">Click to start chatting</div>
-                    </div>
-                `;
-                
-                chatItem.addEventListener('click', () => {
-                    selectChat(user);
-                });
-                
-                chatList.appendChild(chatItem);
-            });
-        }
-
-        // Select a chat
-        function selectChat(user) {
-            logDebug("Selecting chat with user: " + user.id);
-            activeChat = user;
-            
-            // Update active chat header
-            const displayName = user.name || user.email || 'Unknown User';
-            activeChatName.textContent = displayName;
-            activeChatAvatar.textContent = displayName.charAt(0).toUpperCase();
-            activeChatStatus.textContent = user.status === 'online' ? 'Online' : 'Offline';
-            
-            // Highlight selected chat
-            document.querySelectorAll('.chat-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            const selectedChatItem = document.querySelector(`.chat-item[data-user-id="${user.id}"]`);
-            if (selectedChatItem) {
-                selectedChatItem.classList.add('active');
-            }
-            
-            // Load messages
-            loadMessages();
-            
-            // Hide sidebar on mobile
-            if (window.innerWidth <= 768) {
-                sidebar.classList.add('hidden');
-            }
-        }
-
-        // Load messages
-        function loadMessages() {
-            if (!activeChat) {
-                logDebug("No active chat to load messages for");
-                return;
-            }
-            
-            logDebug("Loading messages for chat with: " + activeChat.id);
-            messagesContainer.innerHTML = '';
-            
-            const chatId = getChatId(currentUser.uid, activeChat.id);
-            
-            // Remove any existing message listener
-            if (messagesRef) {
-                messagesRef.off();
-            }
-            
-            // Setup new message listener
-            messagesRef = database.ref('messages/' + chatId);
-            
-            // Load existing messages
-            messagesRef.once('value')
-                .then((snapshot) => {
-                    messages = [];
-                    if (snapshot.exists()) {
-                        snapshot.forEach((childSnapshot) => {
-                            messages.push({
-                                id: childSnapshot.key,
-                                ...childSnapshot.val()
-                            });
-                        });
-                        
-                        // Sort messages by timestamp
-                        messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                        
-                        logDebug("Loaded " + messages.length + " messages");
-                        displayMessages();
-                    } else {
-                        logDebug("No messages found for chat: " + chatId);
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error loading messages:", error);
-                    logDebug("Error loading messages: " + error.message);
-                });
-            
-            // Listen for new messages
-            messagesRef.on('child_added', (snapshot) => {
-                const newMessage = {
-                    id: snapshot.key,
-                    ...snapshot.val()
-                };
-                
-                // Check if message already exists
-                if (!messages.find(msg => msg.id === newMessage.id)) {
-                    messages.push(newMessage);
-                    displayMessages();
-                    logDebug("New message received: " + newMessage.text);
-                }
-            });
-        }
-
-        // Display messages
-        function displayMessages() {
-            messagesContainer.innerHTML = '';
-            
-            messages.forEach((message) => {
-                const messageElement = document.createElement('div');
-                messageElement.className = `message ${message.senderId === currentUser.uid ? 'sent' : 'received'}`;
-                
-                const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                
-                messageElement.innerHTML = `
-                    <div class="message-text">${message.text}</div>
-                    <div class="message-time">${time}</div>
-                `;
-                
-                messagesContainer.appendChild(messageElement);
-            });
-            
-            // Scroll to bottom
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        // Send message
-        function sendMessage() {
-            const text = messageInput.value.trim();
-            
-            if (!text) {
-                logDebug("Cannot send empty message");
-                return;
-            }
-            
-            if (!activeChat) {
-                logDebug("No active chat selected");
-                showNotification('Please select a chat first', 'error');
-                return;
-            }
-            
-            logDebug("Sending message: " + text);
-            
-            const chatId = getChatId(currentUser.uid, activeChat.id);
-            const timestamp = new Date().toISOString();
-            
-            const message = {
-                text: text,
-                senderId: currentUser.uid,
-                timestamp: timestamp
-            };
-            
-            database.ref('messages/' + chatId).push(message)
-                .then(() => {
-                    messageInput.value = '';
-                    logDebug("Message sent successfully");
-                })
-                .catch((error) => {
-                    console.error("Error sending message:", error);
-                    logDebug("Error sending message: " + error.message);
-                    showNotification('Error sending message. Please try again.', 'error');
-                });
-        }
-
-        // Get chat ID (sorted to ensure consistency)
-        function getChatId(userId1, userId2) {
-            return [userId1, userId2].sort().join('_');
-        }
 
         // Show notification
-        function showNotification(message, type) {
-            logDebug("Showing notification: " + message + " (" + type + ")");
+        function showNotification(message, type = 'success') {
             notification.textContent = message;
             notification.className = `notification ${type}`;
             notification.classList.add('show');
@@ -1221,37 +502,305 @@
             }, 3000);
         }
 
-        // Show auth screen
-        function showAuth() {
-            logDebug("Showing auth screen");
-            authContainer.style.display = 'flex';
-            appContainer.style.display = 'none';
-        }
+        // Toggle between login and register forms
+        showRegister.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+        });
 
-        // Show app
-        function showApp() {
-            logDebug("Showing app");
-            authContainer.style.display = 'none';
-            appContainer.style.display = 'flex';
-        }
+        showLogin.addEventListener('click', () => {
+            registerForm.style.display = 'none';
+            loginForm.style.display = 'block';
+        });
 
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            if (currentUser) {
-                // Update user status to offline when page is unloaded
-                database.ref('users/' + currentUser.uid).update({
-                    status: 'offline'
-                }).catch((error) => {
-                    console.error("Error updating user status on page unload:", error);
+        // Register new user
+        registerBtn.addEventListener('click', () => {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            
+            if (!name || !email || !password) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Save user data to database
+                    database.ref('users/' + user.uid).set({
+                        name: name,
+                        email: email,
+                        status: 'online',
+                        lastSeen: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    
+                    showNotification('Registration successful!');
+                    registerForm.style.display = 'none';
+                    loginForm.style.display = 'block';
+                })
+                .catch((error) => {
+                    showNotification(error.message, 'error');
                 });
+        });
+
+        // Login existing user
+        loginBtn.addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showNotification('Login successful!');
+                })
+                .catch((error) => {
+                    showNotification(error.message, 'error');
+                });
+        });
+
+        // Logout user
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut()
+                .then(() => {
+                    showNotification('Logged out successfully');
+                })
+                .catch((error) => {
+                    showNotification(error.message, 'error');
+                });
+        });
+
+        // Send message
+        sendBtn.addEventListener('click', sendMessage);
+        messageText.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
         });
 
-        // Initialize the app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            logDebug("DOM loaded, initializing app");
-            init();
+        function sendMessage() {
+            const message = messageText.value.trim();
+            if (!message || !selectedUser) return;
+            
+            const messageData = {
+                senderId: currentUser.uid,
+                senderName: currentUser.name,
+                receiverId: selectedUser.id,
+                text: message,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            // Save message to database
+            const messageId = database.ref().child('messages').push().key;
+            const updates = {};
+            
+            updates['/messages/' + messageId] = messageData;
+            updates['/user-messages/' + currentUser.uid + '/' + selectedUser.id + '/' + messageId] = true;
+            updates['/user-messages/' + selectedUser.id + '/' + currentUser.uid + '/' + messageId] = true;
+            
+            database.ref().update(updates);
+            
+            messageText.value = '';
+        }
+
+        // Load users list
+        function loadUsers() {
+            usersList.innerHTML = '';
+            
+            database.ref('users').once('value').then((snapshot) => {
+                users = [];
+                snapshot.forEach((childSnapshot) => {
+                    const user = childSnapshot.val();
+                    user.id = childSnapshot.key;
+                    
+                    // Skip current user
+                    if (user.id === currentUser.uid) return;
+                    
+                    users.push(user);
+                    
+                    const userItem = document.createElement('div');
+                    userItem.className = 'user-item';
+                    userItem.dataset.id = user.id;
+                    
+                    userItem.innerHTML = `
+                        <div class="user-avatar">${user.name.charAt(0)}</div>
+                        <div>
+                            <div>${user.name}</div>
+                            <div style="font-size: 12px; color: #777;">${user.status === 'online' ? 'online' : 'offline'}</div>
+                        </div>
+                        ${user.status === 'online' ? '<div class="user-status"></div>' : ''}
+                    `;
+                    
+                    userItem.addEventListener('click', () => selectUser(user));
+                    usersList.appendChild(userItem);
+                });
+            });
+        }
+
+        // Select user to chat with
+        function selectUser(user) {
+            selectedUser = user;
+            
+            // Update UI
+            document.querySelectorAll('.user-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`.user-item[data-id="${user.id}"]`).classList.add('active');
+            
+            chatUserName.textContent = user.name;
+            chatUserAvatar.textContent = user.name.charAt(0);
+            chatHeader.style.display = 'flex';
+            messageInput.style.display = 'flex';
+            emptyChat.style.display = 'none';
+            
+            // Load messages
+            loadMessages();
+        }
+
+        // Load messages between current user and selected user
+        function loadMessages() {
+            chatMessages.innerHTML = '';
+            
+            database.ref('user-messages/' + currentUser.uid + '/' + selectedUser.id).once('value').then((snapshot) => {
+                const messageIds = [];
+                snapshot.forEach((childSnapshot) => {
+                    messageIds.push(childSnapshot.key);
+                });
+                
+                if (messageIds.length === 0) return;
+                
+                database.ref('messages').orderByChild('timestamp').once('value').then((msgSnapshot) => {
+                    msgSnapshot.forEach((childSnapshot) => {
+                        const message = childSnapshot.val();
+                        
+                        if (messageIds.includes(childSnapshot.key)) {
+                            addMessageToUI(message);
+                        }
+                    });
+                    
+                    // Scroll to bottom
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                });
+            });
+        }
+
+        // Add message to UI
+        function addMessageToUI(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.senderId === currentUser.uid ? 'sent' : 'received'}`;
+            
+            const date = new Date(message.timestamp);
+            const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div>${message.text}</div>
+                    <div class="message-time">${timeString}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+        }
+
+        // Listen for authentication state changes
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in
+                currentUser = user;
+                
+                // Get user data from database
+                database.ref('users/' + user.uid).once('value').then((snapshot) => {
+                    const userData = snapshot.val();
+                    currentUser.name = userData.name;
+                    
+                    // Update UI
+                    currentUserName.textContent = userData.name;
+                    currentUserAvatar.textContent = userData.name.charAt(0);
+                    
+                    // Show chat app
+                    loginContainer.style.display = 'none';
+                    chatApp.style.display = 'flex';
+                    
+                    // Load users
+                    loadUsers();
+                    
+                    // Set user status to online
+                    database.ref('users/' + user.uid).update({
+                        status: 'online',
+                        lastSeen: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    
+                    // Setup presence tracking
+                    setupPresenceTracking();
+                    
+                    // Listen for new messages
+                    setupMessageListener();
+                });
+            } else {
+                // User is signed out
+                currentUser = null;
+                selectedUser = null;
+                
+                // Show login screen
+                loginContainer.style.display = 'flex';
+                chatApp.style.display = 'none';
+                
+                // Clear form fields
+                document.getElementById('email').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('regName').value = '';
+                document.getElementById('regEmail').value = '';
+                document.getElementById('regPassword').value = '';
+            }
         });
+
+        // Setup presence tracking
+        function setupPresenceTracking() {
+            const userStatusDatabaseRef = database.ref('users/' + currentUser.uid);
+            
+            // When the user disconnects, set status to offline
+            database.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === false) {
+                    return;
+                }
+                
+                userStatusDatabaseRef.onDisconnect().update({
+                    status: 'offline',
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    userStatusDatabaseRef.update({
+                        status: 'online',
+                        lastSeen: firebase.database.ServerValue.TIMESTAMP
+                    });
+                });
+            });
+            
+            // Listen for user status changes
+            database.ref('users').on('value', (snapshot) => {
+                // Update users list
+                loadUsers();
+            });
+        }
+
+        // Setup message listener
+        function setupMessageListener() {
+            database.ref('messages').orderByChild('timestamp').on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                
+                // If the message is between current user and selected user
+                if ((message.senderId === currentUser.uid && message.receiverId === selectedUser?.id) ||
+                    (message.senderId === selectedUser?.id && message.receiverId === currentUser.uid)) {
+                    addMessageToUI(message);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            });
+        }
     </script>
 </body>
 </html>
